@@ -1,36 +1,62 @@
-Android App - Mansions of Madness Dice - Part2
+Android Tutorial - Dice Roller App for Mansions of Madness - Part 2 of 5
 =======================================
-In part 2 of this tutorial we put on our user experience hats on and address usability issues.
+Analyzing the basic Dice Roller app design to address usability issue.
 
-New Requirements
-=============
-In part one, we put together an app that covered the basic Mansions of Madness dice roll function. However, the app isn't very user friendly:
+Concepts Covered:
+-----------------
+* Analysis - Usability Issues
+* Topics
+  * Organizing Code
+  * Triggering ````Layout```` change from button
+  * Triggering ````RotationAnimation```` for an image
 
-* For each roll, a user needs to scroll through the entire list and count dice. Manually counting dice is pretty cumbersome.
-* A User can't tell if a dice is set to 'hold'. Without any visual cue, it's really easy to lose track of which dice is held and unheld.
+Contents
+-------------------
+* Discussion
+    * Usability
+    * New Design
+* Re-organizing code
+* Dice summary layout
+* Populate Dice count.
+* Change row layout for Held Dice
+* Animation: Spin Dice Image
+
+In this tutorial we're building:
+-----------------------------
+![App Animation V2](./images/part2_animation.gif)
+
+Discussion
+==========
+Usability
+--------
+Okay. So version one meets the basic requirements of a dice roller. But it's not very usable!
+1. For each roll, a user needs to scroll through the entire list and count dice. It's one thing to count physical dice. Counting physicals Manually counting dice is no fun.
+* A user can't tell if a dice is set to 'hold'. Without any visual cue, it's really easy to lose track of which dice is held and unheld.
 * When a player triggers a roll, the dice face just changes or remains the same. This can be especially confusing if say there was only 1 dice and the player rolls the same value as before.
 
-To tackle the above issues:
-* Expand the bottom area with a dice count widget.
+![Part1 Sample Animation](./images/part2_sample_animation.gif)
+
+Design
+-------
+To tackle the issues outlined above:
+1. Expand the bottom area with a dice count widget.
 * Tapping 'hold' changes the row background color and button text.
 * Tapping 'roll' triggers an animation. The animation will be a dice spin. Each dice will spin between 1 and 3 seconds and between 1 and 3 revolutions.
 
-Design
-=======
-![MoM Dice](./images/app_design_pt2.png)
+![Design](./images/part2_app_design.png)
 
 Implementation Steps
 ======================
 
-1.  Refactor Inner classes into outer classes for better organization.
-2.  Add Dice summary.
-3.  Populate Dice count into summary
-4.  Set row background grey when Dice is in 'HELD' state.
-5.  Spin dice on roll with animation
+1.  Re-organizing code: Refactor inner classes into outer classes.
+2.  Dice summary Layout.
+3.  Populate Dice count into summary.
+4.  Set row background grey and button text when Dice is in 'HELD' state.
+5.  Trigger animation from roll button.
 
 Step 1 : Refactor
 ==================
-Currently, all the app logic sits in one class ````MainActivity.java````. As we add more features, the Code will get pretty messy and difficult to read with everything  in one place. As a first step, we split out the inner classes into top level classes ````Dice```` and ````DiceAdapter````.
+In part 1, for simplicity's sake, I put all app logic in one class ````MainActivity.java````. As I add more features, I'm anticipating that the code will get pretty messy and difficult to read. As a first step, I split out the inner classes into top level classes ````Dice```` and ````DiceAdapter````.
 
     Dice.java
 
@@ -132,9 +158,9 @@ Currently, all the app logic sits in one class ````MainActivity.java````. As we 
 
 Step 2 : Dice Summary Layout
 =======================
-The Summary Widget is a 4 column layout position between the dice area and control area. Each column included blank dice count/label, star count/label, magnifying glass count/label, and total count.
+The Dice summary layout's position is between the dice roll area and button area. The summary layout is 4 columns. Each column includes dice count/label for blank/mag/star and total.
 
-![Blueprint](./images/blueprint_design_pt2.png)
+![Blueprint](./images/part2_blueprint_design.png)
 
     activity_main.xml
 
@@ -279,13 +305,12 @@ The Summary Widget is a 4 column layout position between the dice area and contr
                 android:text="@string/roll_button_label"
                 android:onClick="rollDice"/>
         </LinearLayout>
-
     </android.support.constraint.ConstraintLayout>
 
-Step 3: Populate Dice Count into Widget
+Step 3: Populate Dice Counts
 ==============================================
 
-Next, we populate the widget with dice counts. We add 2 methods to ````MainActivity.java````.  ````updateDiceCount```` populates the values into the TextView and ````countDice```` counts the dice. Every time we change dice values such as ````MainActivity.rollDice```` and ````changeButton.onClick```` we update the dice count.
+To populate the dice count, I add a methods to count dice and populate TextViews. We add 2 methods to ````MainActivity.java````.  ````updateDiceCount```` populates the values into the TextView and ````countDice```` counts the dice. Every time we change dice values such as ````MainActivity.rollDice```` and ````changeButton.onClick```` we update the dice count.
 
     MainActivity.java
 
@@ -326,8 +351,8 @@ Now that the ````DiceAdapter```` is in an outer class, we need a reference to th
             super(context, resource, list);
             activity = (MainActivity) context;
         }
-    ....
-    //setup dice change button
+      ....
+       //setup dice change button
        Button changeButton = convertView.findViewById(R.id.dice_change_button);
        changeButton.setOnClickListener(new View.OnClickListener() {
            @Override
@@ -366,8 +391,8 @@ Currently, the hold button triggers a state change in the dice object. For this 
         }
 
 Step 5: Dice Spin
-=====================
-The current 'Roll' button logic goes through all the dice and sets new values for each. To add dice animation, we get the corresponding ImageView and apply a [````RotationAnimation````](https://developer.android.com/reference/android/view/animation/RotateAnimation.html).
+=================
+The current 'Roll' button logic goes through all the dice, check the gold state, and sets new values for each. For every dice that rolls, trigger an animation for that dice image. To add dice animation, we get the corresponding ImageView and apply a [````RotationAnimation````](https://developer.android.com/reference/android/view/animation/RotateAnimation.html).
 
     MainActivity.java
     ....
@@ -380,24 +405,22 @@ The current 'Roll' button logic goes through all the dice and sets new values fo
 
             if(!dice.hold) {
                 dice.roll();
-                View diceRowView = listView.getChildAt(i);
-                if (diceRowView != null) {
-                    ImageView diceView = diceRowView.findViewById(R.id.dice_icon);
-                    int rotation = randomRotation();
-                    int duration = randomDuration();
+                View diceRowView = listView.getChildAt(i);                
+                ImageView diceView = diceRowView.findViewById(R.id.dice_icon);
+                int rotation = randomRotation();
+                int duration = randomDuration();
 
-                    RotateAnimation rotate = new RotateAnimation(
-                            0, rotation,
-                            Animation.RELATIVE_TO_SELF, CENTER,
-                            Animation.RELATIVE_TO_SELF, CENTER
-                    );
-                    rotate.setDuration(duration);
-                    rotate.setFillAfter(true);
-                    rotate.setFillEnabled(true);
-                    rotate.setInterpolator(new DecelerateInterpolator());
+                RotateAnimation rotate = new RotateAnimation(
+                        0, rotation,
+                        Animation.RELATIVE_TO_SELF, CENTER,
+                        Animation.RELATIVE_TO_SELF, CENTER
+                );
+                rotate.setDuration(duration);
+                rotate.setFillAfter(true);
+                rotate.setFillEnabled(true);
+                rotate.setInterpolator(new DecelerateInterpolator());
 
-                    diceView.startAnimation(rotate);
-                }
+                diceView.startAnimation(rotate);            
             }
         }
 
@@ -415,8 +438,6 @@ The current 'Roll' button logic goes through all the dice and sets new values fo
     }
     ....
 
-Screenshot and Video
-=================
-![Animation](./images/animation.gif)
+## Why random Duration and Rotation?
 
-![Screen Shot](./images/screenshot03.png)
+I decided to randomize duration and rotation so that the dice don't all spin in unison, which I think looks really weird.
