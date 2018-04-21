@@ -1,62 +1,66 @@
 Android Tutorial - Dice Roller App for Mansions of Madness - Part 2 of 5
-=======================================
-Analyzing the basic Dice Roller app design to address usability issue.
+========================================================================
+Improving on a basic Dice roller app design with visual cues and animation.
+
+In this tutorial I'm building:
+-----------------------------
+![Screen Video](./images/part2_animation.gif)
 
 Concepts Covered:
 -----------------
-* Analysis - Usability Issues
-* Topics
-  * Organizing Code
-  * Triggering ````Layout```` change from button
-  * Triggering ````RotationAnimation```` for an image
+* Analyzing Usability Shortfalls
+* Button triggering Layout change and Animation
 
-Contents
--------------------
+Reader Requirements
+------------------------
+* Beginner level Java
+* Android: ````ListView```` and ````Adapter```` concept ([covered in part1](https://github.com/sjan/Android-Tutorial-MansionOfMadnessDiceRoller-Part1))
+* Android: Basic Layout XML design ([covered in part1](https://github.com/sjan/Android-Tutorial-MansionOfMadnessDiceRoller-Part1))
+
+Table of Contents
+--------
 * Discussion
     * Usability
-    * New Design
+    * Proposed Design
 * Re-organizing code
 * Dice summary layout
 * Populate Dice count.
 * Change row layout for Held Dice
-* Animation: Spin Dice Image
-
-In this tutorial we're building:
------------------------------
-![App Animation V2](./images/part2_animation.gif)
+* Animation: Spin Dice
 
 Discussion
 ==========
 Usability
---------
-Okay. So version one meets the basic requirements of a dice roller. But it's not very usable!
-1. For each roll, a user needs to scroll through the entire list and count dice. It's one thing to count physical dice. Counting physicals Manually counting dice is no fun.
-* A user can't tell if a dice is set to 'hold'. Without any visual cue, it's really easy to lose track of which dice is held and unheld.
-* When a player triggers a roll, the dice face just changes or remains the same. This can be especially confusing if say there was only 1 dice and the player rolls the same value as before.
+---------
+The [initial design proposed in part 1](https://github.com/sjan/Android-Tutorial-MansionOfMadnessDiceRoller-Part2) meets the basic requirements of a dice roller. But it's not user friendly at all!
 
-![Part1 Sample Animation](./images/part2_sample_animation.gif)
+![Part1 Reference Animation](./images/part2_sample_animation.gif)
 
-Design
--------
-To tackle the issues outlined above:
-1. Expand the bottom area with a dice count widget.
-* Tapping 'hold' changes the row background color and button text.
-* Tapping 'roll' triggers an animation. The animation will be a dice spin. Each dice will spin between 1 and 3 seconds and between 1 and 3 revolutions.
+1. For each roll, a user needs to scroll through the entire list and count dice. Counting physical dice is sorta fun. Counting rows in a scrolling list? not so much.
+2. A user can't tell if a dice is set to 'hold'. Without any visual cue, it's really easy to lose track of which dice is held and unheld.
+3. When a player triggers a roll, the dice face either changes or remains the same. This can be especially confusing when the user rolls repeat results.
+
+Proposed Design
+---------------
+Tackling the issues outlined above, I propose:
+1. Expanding the bottom area with a dice count section.
+2. Tapping 'hold' changes the row background color and button text.
+3. Tapping 'roll' triggers an animation. The animation will be a dice spin. Each dice will spin between 1 to 3 seconds and between 1 to 3 revolutions.
 
 ![Design](./images/part2_app_design.png)
 
 Implementation Steps
 ======================
 
-1.  Re-organizing code: Refactor inner classes into outer classes.
+1.  Organizing code.
 2.  Dice summary Layout.
-3.  Populate Dice count into summary.
+3.  Populate Dice count into the summary.
 4.  Set row background grey and button text when Dice is in 'HELD' state.
 5.  Trigger animation from roll button.
 
 Step 1 : Refactor
 ==================
-In part 1, for simplicity's sake, I put all app logic in one class ````MainActivity.java````. As I add more features, I'm anticipating that the code will get pretty messy and difficult to read. As a first step, I split out the inner classes into top level classes ````Dice```` and ````DiceAdapter````.
+In part 1, for simplicity's sake, I put all app logic in one class ````MainActivity.java````. As I add more features, I'm anticipating that the code will get pretty messy and difficult to read. As a first step to better organize my codebase, I split out the inner classes into top level classes ````Dice```` and ````DiceAdapter````.
 
     Dice.java
 
@@ -158,7 +162,7 @@ In part 1, for simplicity's sake, I put all app logic in one class ````MainActiv
 
 Step 2 : Dice Summary Layout
 =======================
-The Dice summary layout's position is between the dice roll area and button area. The summary layout is 4 columns. Each column includes dice count/label for blank/mag/star and total.
+The Dice summary sits between the dice roll area and button area. The layout consists of 4 columns. Each column includes dice count/label for the different categories blank/mag/star and total.
 
 ![Blueprint](./images/part2_blueprint_design.png)
 
@@ -310,7 +314,7 @@ The Dice summary layout's position is between the dice roll area and button area
 Step 3: Populate Dice Counts
 ==============================================
 
-To populate the dice count, I add a methods to count dice and populate TextViews. We add 2 methods to ````MainActivity.java````.  ````updateDiceCount```` populates the values into the TextView and ````countDice```` counts the dice. Every time we change dice values such as ````MainActivity.rollDice```` and ````changeButton.onClick```` we update the dice count.
+To populate the dice count, I add 2 methods to ````MainActivity.java```` to count dice and populate TextViews. ````updateDiceCount```` populates the values into the TextView and ````countDice```` counts the dice. The app will trigger this update on ````MainActivity.rollDice```` and ````changeButton.onClick````.
 
     MainActivity.java
 
@@ -345,7 +349,6 @@ To populate the dice count, I add a methods to count dice and populate TextViews
 Now that the ````DiceAdapter```` is in an outer class, we need a reference to the activity object from the adapter.
 
     public class DiceAdapter extends ArrayAdapter<Dice> {
-        MainActivity activity;
 
         public DiceAdapter(@NonNull Context context, int resource, List<Dice> list) {
             super(context, resource, list);
@@ -360,17 +363,19 @@ Now that the ````DiceAdapter```` is in an outer class, we need a reference to th
                Dice dice = getItem(position);
                dice.nextValue();
                notifyDataSetChanged();
-               activity.updateDiceCount();
+               ((MainActivity)getContext()).updateDiceCount();
            }
        });
     ....
 
+## Why cast ````Context```` to ````MainActivity````? ##
 
+The ````Context```` is amount the least self-explanatory concepts in Android. It's so broad that it's meaningless. Regardless, ````Context```` is an important concept so I'll breifly describe the idea. In Android world, applications can be started in different ways. Starting an application as an ````Activity```` is only one way. ````Context```` potentially describes different environments that initialize the code. In this case, the root context is ````MainActivity````. Other possible contexts are ````Application````, ````Activity````, ````Service```` and ````IntentService````. For details on this check out the [documentation](https://developer.android.com/reference/android/content/Context.html). Browsing discussions on this topic on Stackoverflow is highly recommended. For complex applications, casting context into Activity can be problematic because the context might **not** be an Activity. But for this app, I'll just make this *dangerous* assumption.
 
 Step 4: Hold Button Triggers Background Change
 ==============================================
 
-Currently, the hold button triggers a state change in the dice object. For this feature we modify the adapter render logic to set row background color depending on the dice hold state. If the ````Dice.hold```` is true, then background color should be light grey, otherwise we set it white. We also set the text to "HOLD" or "UNHOLD"
+Currently, the hold button only triggers a state change in the dice object. For this feature, I modify the ````DiceAdapter```` ````getView```` logic. The new logic sets the row background color and button text depending on the ````Dice.hold```` state.
 
         DiceAdapter.java
 
@@ -440,4 +445,4 @@ The current 'Roll' button logic goes through all the dice, check the gold state,
 
 ## Why random Duration and Rotation?
 
-I decided to randomize duration and rotation so that the dice don't all spin in unison, which I think looks really weird.
+Without randomizing, the dice will spin in unison, which looks a bit odd. Adding a small offset to each makes the spin a bit more realistic.
